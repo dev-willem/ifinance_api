@@ -1,0 +1,26 @@
+# Perfil test — usado nos testes de integração com Testcontainers
+spring:
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+
+  cache:
+    type: none
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test-client-id
+            client-secret: test-client-secret
+            scope: openid, email, profile
+        provider:
+          google:
+            issuer-uri: https://accounts.google.com
+
+logging:
+  level:
+    root: WARN
+    com.willembergfilho.ifinance: INFO
