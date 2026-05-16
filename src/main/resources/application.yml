@@ -1,0 +1,85 @@
+spring:
+  application:
+    name: ifinance
+
+  cloud:
+    config:
+      enabled: false
+
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  profiles:
+    active: local
+
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: iFinance
+    version: '@project.version@'
+    description: 'Plataforma de simulação financeira — SAC, PRICE, CET, VPL, TIR, Renda Fixa, Planejamento'
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    try-it-out-enabled: true
+    filter: true
+    display-request-duration: true
+    groups-order: asc
+    operations-sorter: alpha
+    tags-sorter: alpha
+  group-configs:
+    - group: simulation
+      paths-to-match: /api/v1/simulations/**
+      display-name: 'Simulações'
+    - group: investment
+      paths-to-match: /api/v1/investments/**
+      display-name: 'Investimentos'
+    - group: planning
+      paths-to-match: /api/v1/planning/**
+      display-name: 'Planejamento Financeiro'
+    - group: export
+      paths-to-match: /api/v1/simulations/*/export/**
+      display-name: 'Exportação'
+    - group: index
+      paths-to-match: /api/v1/indexes/**
+      display-name: 'Índices econômicos'
+    - group: analysis
+      paths-to-match: /api/v1/analysis/**
+      display-name: 'Análise financeira'
+  info:
+    title: 'iFinance API'
+    description: 'Plataforma de simulação financeira — SAC, PRICE, CET, VPL, TIR, Renda Fixa, Planejamento'
+    version: '@project.version@'
+    contact:
+      name: 'Willemberg Filho'
+    license:
+      name: 'Proprietário'
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json
+  show-actuator: false
