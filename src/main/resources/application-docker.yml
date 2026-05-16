@@ -1,0 +1,48 @@
+# Perfil docker — backend containerizado, banco via serviço 'db'
+spring:
+  datasource:
+    url: jdbc:postgresql://db:5432/ifinance_dev
+    username: ${DB_USERNAME:ifinance}
+    password: ${DB_PASSWORD:ifinance}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 5000
+      validation-timeout: 2000
+      keepalive-time: 60000
+      max-lifetime: 1800000
+
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: openid, email, profile
+        provider:
+          google:
+            issuer-uri: https://accounts.google.com
+
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=60m
+
+management:
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.willembergfilho.ifinance: DEBUG
+
+server:
+  port: 8080
