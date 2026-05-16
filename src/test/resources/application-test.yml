@@ -1,0 +1,31 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test
+            client-secret: test
+            scope: openid, email, profile
+        provider:
+          google:
+            issuer-uri: https://accounts.google.com
+
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=100,expireAfterWrite=5m
+
+springdoc:
+  cache:
+    disabled: true
+
+logging:
+  level:
+    com.willembergfilho.ifinance: INFO
+    org.hibernate.SQL: WARN
