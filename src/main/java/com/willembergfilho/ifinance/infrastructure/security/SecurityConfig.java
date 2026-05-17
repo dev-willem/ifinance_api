@@ -1,5 +1,6 @@
 package com.willembergfilho.ifinance.infrastructure.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -17,6 +18,12 @@ import java.util.List;
 public class SecurityConfig {
 
     private final UserSyncService userSyncService;
+
+    @Value("${app.frontend.base-url}")
+    private String frontendBaseUrl;
+
+    @Value("#{'${app.cors.allowed-origins}'.split(',')}")
+    private List<String> corsAllowedOrigins;
 
     public SecurityConfig(UserSyncService userSyncService) {
         this.userSyncService = userSyncService;
@@ -37,7 +44,7 @@ public class SecurityConfig {
 
                     userSyncService.syncFromOAuth2(oauthUser, "google");
 
-                    response.sendRedirect("http://localhost:7000/auth/callback");
+                    response.sendRedirect(frontendBaseUrl + "/auth/callback");
                 })
             )
             .csrf(csrf -> csrf.disable());
@@ -49,7 +56,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of("http://localhost:7000"));
+        config.setAllowedOrigins(corsAllowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
