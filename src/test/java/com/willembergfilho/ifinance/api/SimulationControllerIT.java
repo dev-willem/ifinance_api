@@ -1,10 +1,11 @@
 package com.willembergfilho.ifinance.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.willembergfilho.ifinance.infrastructure.persistence.UserJpaRepository;
+import com.willembergfilho.ifinance.infrastructure.persistence.entity.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.MediaType;
@@ -16,13 +17,16 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.UUID;
+
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
-@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Testcontainers(disabledWithoutDocker = true)
 class SimulationControllerIT {
@@ -35,15 +39,22 @@ class SimulationControllerIT {
     WebApplicationContext wac;
 
     @Autowired
-    ObjectMapper objectMapper;
+    UserJpaRepository userRepository;
 
     MockMvc mvc;
 
     private static final String BASE = "/api/v1/simulations";
+    private static final String TEST_SUB = "test-ci-user";
+    private static final UUID TEST_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000099");
 
     @BeforeEach
     void setup() {
-        mvc = MockMvcBuilders.webAppContextSetup(wac).build();
+        userRepository.findBySubjectId(TEST_SUB).orElseGet(() -> {
+            UserEntity user = new UserEntity(TEST_USER_ID, TEST_SUB,
+                    "test@ci.local", "Test User", "google", null, null);
+            return userRepository.save(user);
+        });
+        mvc = MockMvcBuilders.webAppContextSetup(wac).apply(springSecurity()).build();
     }
 
     // ---------------------------------------------------------------- POST --
@@ -65,7 +76,8 @@ class SimulationControllerIT {
                 }
                 """;
 
-        mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content(body))
+        mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content(body)
+                        .with(oauth2Login().attributes(a -> a.put("sub", TEST_SUB))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.installments").isArray())
@@ -90,7 +102,8 @@ class SimulationControllerIT {
                 }
                 """;
 
-        mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content(body))
+        mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content(body)
+                        .with(oauth2Login().attributes(a -> a.put("sub", TEST_SUB))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.installments.length()").value(24));
     }
@@ -111,7 +124,8 @@ class SimulationControllerIT {
                 }
                 """;
 
-        mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content(body))
+        mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content(body)
+                        .with(oauth2Login().attributes(a -> a.put("sub", TEST_SUB))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Validation Error"));
     }
@@ -132,7 +146,8 @@ class SimulationControllerIT {
                 }
                 """;
 
-        mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content(body))
+        mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content(body)
+                        .with(oauth2Login().attributes(a -> a.put("sub", TEST_SUB))))
                 .andExpect(status().isBadRequest());
     }
 
@@ -155,13 +170,15 @@ class SimulationControllerIT {
                 }
                 """;
 
-        String result = mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content(body))
+        String result = mvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content(body)
+                        .with(oauth2Login().attributes(a -> a.put("sub", TEST_SUB))))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        String id = objectMapper.readTree(result).get("id").asText();
+        String id = new ObjectMapper().readTree(result).get("id").asText();
 
-        mvc.perform(get(BASE + "/" + id))
+        mvc.perform(get(BASE + "/" + id)
+                        .with(oauth2Login().attributes(a -> a.put("sub", TEST_SUB))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id))
                 .andExpect(jsonPath("$.installments.length()").value(6));
@@ -169,14 +186,16 @@ class SimulationControllerIT {
 
     @Test
     void getById_unknownId_returnsNotFound() throws Exception {
-        mvc.perform(get(BASE + "/00000000-0000-0000-0000-000000000000"))
+        mvc.perform(get(BASE + "/00000000-0000-0000-0000-000000000000")
+                        .with(oauth2Login().attributes(a -> a.put("sub", TEST_SUB))))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Not Found"));
     }
 
     @Test
     void history_returnsPagedList() throws Exception {
-        mvc.perform(get(BASE + "/history"))
+        mvc.perform(get(BASE + "/history")
+                        .with(oauth2Login().attributes(a -> a.put("sub", TEST_SUB))))
                 .andExpect(status().isOk());
     }
 }
