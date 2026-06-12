@@ -34,6 +34,7 @@ public class SecurityConfig {
         http
             .cors(Customizer.withDefaults())
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/actuator/health").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth -> oauth
