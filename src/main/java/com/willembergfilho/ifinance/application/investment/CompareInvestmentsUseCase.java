@@ -5,7 +5,9 @@ import com.willembergfilho.ifinance.domain.investment.InvestmentRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class CompareInvestmentsUseCase {
@@ -28,12 +30,21 @@ public class CompareInvestmentsUseCase {
 
         List<Investment> investments = investmentRepository.findAllById(investmentIds);
 
-        boolean unauthorized = investments.stream()
-                .anyMatch(i -> !i.getUserId().equals(userId));
-        if (unauthorized) {
-            throw new SecurityException("One or more investments do not belong to the authenticated user.");
+        List<Investment> owned = investments.stream()
+                .filter(i -> i.getUserId().equals(userId))
+                .toList();
+
+        // 404 (not 403) for any ID that doesn't exist or isn't owned by the caller —
+        // a distinct status would let callers enumerate other users' investment IDs.
+        if (owned.size() < investmentIds.size()) {
+            Set<UUID> ownedIds = owned.stream().map(Investment::getId).collect(Collectors.toSet());
+            UUID missingOrForeign = investmentIds.stream()
+                    .filter(id -> !ownedIds.contains(id))
+                    .findFirst()
+                    .orElseThrow();
+            throw new InvestmentNotFoundException(missingOrForeign);
         }
 
-        return investments;
+        return owned;
     }
 }
