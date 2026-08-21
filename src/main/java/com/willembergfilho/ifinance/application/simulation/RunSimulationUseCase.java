@@ -1,5 +1,6 @@
 package com.willembergfilho.ifinance.application.simulation;
 
+import com.willembergfilho.ifinance.domain.index.IndexRate;
 import com.willembergfilho.ifinance.domain.index.IndexRateRepository;
 import com.willembergfilho.ifinance.domain.math.*;
 import com.willembergfilho.ifinance.domain.simulation.*;
@@ -73,10 +74,11 @@ public class RunSimulationUseCase {
     }
 
     private List<BigDecimal> fetchInflationRates(SimulationParameters parameters) {
+        IndexRate latest = indexRateRepository.findLatestByIndex(parameters.inflationIndex())
+                .orElseThrow(() -> new CalculationException(
+                        "Index rate not available for " + parameters.inflationIndex()));
         // BCB rates come in percentage form (e.g. 0.67 = 0.67%), convert to decimal
-        BigDecimal latestRate = indexRateRepository.findLatestByIndex(parameters.inflationIndex())
-                .map(r -> MonetaryRounding.roundRate(r.rate().divide(HUNDRED, MonetaryRounding.MC)))
-                .orElse(BigDecimal.ZERO);
+        BigDecimal latestRate = MonetaryRounding.roundRate(latest.rate().divide(HUNDRED, MonetaryRounding.MC));
         return Collections.nCopies(parameters.term(), latestRate);
     }
 

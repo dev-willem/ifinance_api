@@ -24,11 +24,8 @@ public class ExportSimulationUseCase {
     @Transactional
     public ExportResult execute(UUID userId, UUID simulationId, String format) {
         Simulation simulation = simulationRepository.findById(simulationId)
+                .filter(s -> s.getUserId().equals(userId))
                 .orElseThrow(() -> new SimulationNotFoundException(simulationId));
-
-        if (!simulation.getUserId().equals(userId)) {
-            throw new SecurityException("Simulation does not belong to the authenticated user.");
-        }
 
         return switch (format.toLowerCase()) {
             case "pdf" -> {
