@@ -48,7 +48,7 @@ public class ExcelExporter {
         Object[][] params = {
                 {"Sistema de Amortização", p.amortizationSystem().name()},
                 {"Valor Financiado", p.principal().doubleValue()},
-                {"Taxa de Juros", p.interestRate().doubleValue()},
+                {"Taxa de Juros (%)", p.interestRate().doubleValue()},
                 {"Tipo de Taxa", p.rateType().name()},
                 {"Prazo", (double) p.term()},
                 {"Periodicidade", p.periodicity().name()},

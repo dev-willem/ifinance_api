@@ -83,9 +83,8 @@ public class PrepaymentUseCase {
 
     private BigDecimal resolvePeriodicRate(SimulationParameters p) {
         BigDecimal rate = p.interestRate();
-        if (rate.compareTo(BigDecimal.ONE) > 0) {
-            rate = rate.divide(HUNDRED, MC);
-        }
+        // Input is always a percentage — normalize to decimal
+        rate = rate.divide(HUNDRED, MC);
         if (p.rateType() == RateType.EFFECTIVE) {
             return MonetaryRounding.roundRate(rate);
         }

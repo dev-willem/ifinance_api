@@ -55,7 +55,7 @@ public record InvestmentResponse(
                 p.name(),
                 p.type(),
                 p.rateBasis(),
-                p.rateValue(),
+                p.rateValue() != null ? p.rateValue().movePointRight(2).stripTrailingZeros() : null,
                 p.principal(),
                 p.termDays(),
                 p.startDate(),

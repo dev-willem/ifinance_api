@@ -124,7 +124,9 @@ public class InvestmentController {
             BigDecimal netPct = r.netAnnualRate() != null
                     ? r.netAnnualRate().multiply(new BigDecimal("100")).setScale(4, RoundingMode.HALF_EVEN) : null;
             responses.add(new DirectCompareResponse(
-                    p.name(), p.type(), p.rateBasis(), p.rateValue(), p.principal(), p.termDays(),
+                    p.name(), p.type(), p.rateBasis(),
+                    p.rateValue() != null ? p.rateValue().movePointRight(2).stripTrailingZeros() : null,
+                    p.principal(), p.termDays(),
                     r.grossReturn(), r.netReturn(), r.irAmount(), irRatePct, grossPct, netPct,
                     r.indexRateUsed(), p.type().isTaxExempt()
             ));
