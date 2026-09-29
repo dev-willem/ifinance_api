@@ -84,7 +84,7 @@ public class PdfExporter {
 
         addRow(table, "Sistema de Amortização", p.amortizationSystem().name(), bold, regular);
         addRow(table, "Valor Financiado", currency(p.principal()), bold, regular);
-        addRow(table, "Taxa de Juros", percent(p.interestRate()) + " (" + p.rateType().name() + ")", bold, regular);
+        addRow(table, "Taxa de Juros", percent(p.interestRate() != null ? p.interestRate().movePointLeft(2) : null) + " (" + p.rateType().name() + ")", bold, regular);
         addRow(table, "Prazo", p.term() + " " + p.periodicity().name().toLowerCase(), bold, regular);
         if (p.cetEnabled()) addRow(table, "CET habilitado", "Sim", bold, regular);
         if (p.inflationCorrectionEnabled())

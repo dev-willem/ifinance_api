@@ -4,8 +4,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.willembergfilho.ifinance.domain.simulation.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -24,6 +26,7 @@ public record SimulationResponse(
         SimulationStatus status,
         BigDecimal totalPaid,
         BigDecimal totalInterest,
+        BigDecimal totalCharges,
         CetResultResponse cet,
         List<InstallmentResponse> installments,
         Instant createdAt
@@ -51,9 +54,18 @@ public record SimulationResponse(
                 simulation.getStatus(),
                 schedule != null ? schedule.totalPaid() : null,
                 schedule != null ? schedule.totalInterest() : null,
+                schedule != null ? totalCharges(schedule) : null,
                 schedule != null ? CetResultResponse.from(schedule.cetResult()) : null,
                 installments,
                 simulation.getCreatedAt()
         );
+    }
+
+    private static BigDecimal totalCharges(AmortizationSchedule schedule) {
+        return schedule.installments().stream()
+                .map(Installment::additionalCharges)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_EVEN);
     }
 }

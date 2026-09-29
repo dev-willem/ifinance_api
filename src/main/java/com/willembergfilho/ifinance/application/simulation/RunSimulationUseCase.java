@@ -84,10 +84,8 @@ public class RunSimulationUseCase {
 
     private BigDecimal resolvePeriodicRate(SimulationParameters p) {
         BigDecimal rate = p.interestRate();
-        // Accept percentage input (e.g. 11.75 for 11.75% a.a.) — normalize to decimal
-        if (rate.compareTo(BigDecimal.ONE) > 0) {
-            rate = rate.divide(HUNDRED, MonetaryRounding.MC);
-        }
+        // Input is always a percentage (e.g. 11.75 for 11.75% a.a., 0.99 for 0.99% a.m.) — normalize to decimal
+        rate = rate.divide(HUNDRED, MonetaryRounding.MC);
         if (p.rateType() == RateType.EFFECTIVE) {
             return MonetaryRounding.roundRate(rate);
         }
