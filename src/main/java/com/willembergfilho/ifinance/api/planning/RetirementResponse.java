@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.willembergfilho.ifinance.domain.planning.RetirementResult;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record RetirementResponse(
@@ -24,7 +25,7 @@ public record RetirementResponse(
                 r.monthlyRate(),
                 r.monthsToFire(),
                 r.yearsToFire(),
-                r.remainingMonths(),
+                r.remainingMonths() == null ? null : r.remainingMonths().setScale(2, RoundingMode.HALF_UP),
                 r.alreadyFire(),
                 r.projectedAmountAt10Years(),
                 r.projectedAmountAt20Years()

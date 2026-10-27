@@ -25,11 +25,16 @@ public record SimulationRequest(
 
         @NotNull Periodicity periodicity,
 
-        boolean cetEnabled,
+        Boolean cetEnabled,
 
-        boolean inflationCorrectionEnabled,
+        Boolean inflationCorrectionEnabled,
 
         EconomicIndex inflationIndex,
 
         @Valid List<CetChargeRequest> charges
-) {}
+) {
+    public SimulationRequest {
+        if (cetEnabled == null) cetEnabled = false;
+        if (inflationCorrectionEnabled == null) inflationCorrectionEnabled = false;
+    }
+}

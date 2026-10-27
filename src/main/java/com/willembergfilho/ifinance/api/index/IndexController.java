@@ -43,6 +43,9 @@ public class IndexController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
 
+        if (from.isAfter(to)) {
+            throw new IllegalArgumentException("Intervalo inválido: 'from' (" + from + ") deve ser anterior ou igual a 'to' (" + to + ").");
+        }
         List<IndexRate> rates = fetchIndexRate.fetchRange(index, from, to);
         return ResponseEntity.ok(rates.stream().map(IndexRateResponse::from).toList());
     }

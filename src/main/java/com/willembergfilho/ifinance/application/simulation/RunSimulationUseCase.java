@@ -100,7 +100,7 @@ public class RunSimulationUseCase {
                 .filter(c -> c.appliesOnPeriod() != null && c.appliesOnPeriod() == 0)
                 .map(c -> c.chargeType() == CetCharge.ChargeType.FIXED
                         ? c.amount()
-                        : parameters.principal().multiply(c.amount(), MonetaryRounding.MC))
+                        : parameters.principal().multiply(c.amount().divide(HUNDRED, MonetaryRounding.MC), MonetaryRounding.MC))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal netReceived = parameters.principal().subtract(upfrontCharges, MonetaryRounding.MC);
@@ -113,7 +113,7 @@ public class RunSimulationUseCase {
                     .filter(c -> c.appliesOnPeriod() == null)
                     .map(c -> c.chargeType() == CetCharge.ChargeType.FIXED
                             ? c.amount()
-                            : inst.principalBalanceBefore().multiply(c.amount(), MonetaryRounding.MC))
+                            : inst.principalBalanceBefore().multiply(c.amount().divide(HUNDRED, MonetaryRounding.MC), MonetaryRounding.MC))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             cashFlows.add(inst.total().add(periodCharges, MonetaryRounding.MC));
         }
