@@ -272,6 +272,14 @@ sudo docker compose --profile prod exec -T db-prod \
 gunzip -c ~/ifinance-AAAA-MM-DD.sql.gz | sudo docker compose --profile prod exec -T db-prod psql -U ifinance ifinance
 ```
 
+**pgAdmin / DBeaver (túnel SSH):** o `/opt/ifinance/compose.override.yml` publica o
+`db-prod` só em `127.0.0.1:5432` da VM. No pgAdmin, configure a conexão assim:
+
+- **Connection:** host `127.0.0.1`, porta `5432`, banco `ifinance`, usuário `ifinance`, senha `DB_PASSWORD` do `.env`.
+- **SSH Tunnel:** host `64.181.167.33`, usuário `ubuntu`, autenticação por *Identity file* com a chave `~/.ssh/ifinance_oci`.
+
+Nunca libere a porta 5432 na Security List.
+
 > **Nunca** rode `docker compose down -v`: o `-v` apaga o volume do Postgres com todos os dados.
 
 ### Problemas comuns
