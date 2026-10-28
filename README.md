@@ -13,13 +13,17 @@ Para produção, siga o passo a passo abaixo. Ele substitui o modo 3 do DEPLOY.m
 ## Produção: Oracle Cloud + Netlify
 
 ```
-Navegador ──► https://ifinance-app.netlify.app            (frontend, Netlify)
-    │
-    └──────► https://<IP-com-hifens>.sslip.io             (Oracle VM)
-                 Nginx :443 (Let's Encrypt)
-                   └─► 127.0.0.1:8080  backend-prod  (Docker)
-                                         └─► db-prod  Postgres 16 (Docker, sem porta exposta)
+Navegador ──► https://ifinance-app.netlify.app          (frontend + proxy, Netlify)
+                 │  /api/*, /oauth2/*, /login/oauth2/*, /logout   (public/_redirects)
+                 └─► https://<IP-com-hifens>.sslip.io     (Oracle VM)
+                         Nginx :443 (Let's Encrypt)
+                           └─► 127.0.0.1:8080  backend-prod  (Docker)
+                                                 └─► db-prod  Postgres 16 (Docker, sem porta exposta)
 ```
+
+O navegador **só fala com o domínio do Netlify**: o Netlify repassa as rotas do backend.
+Assim o cookie de sessão é do próprio site. O Firefox e o Safari bloqueiam cookie
+de outro domínio, e o login não funcionaria se o frontend chamasse a API direto.
 
 O Postgres roda **na mesma VM**, como o serviço `db-prod` do [compose.yml](./compose.yml).
 Os dados ficam no volume Docker `ifinance_postgres_prod_data`.
@@ -121,11 +125,17 @@ DB_PASSWORD=<saída de: openssl rand -hex 24>
 # Google OAuth (passo 5)
 GOOGLE_CLIENT_ID=xxxxxxxx.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxx
-GOOGLE_REDIRECT_URI=https://64-181-167-33.sslip.io/login/oauth2/code/google
+# O Google devolve para o Netlify, que repassa ao backend (ver arquitetura)
+GOOGLE_REDIRECT_URI=https://ifinance-app.netlify.app/login/oauth2/code/google
 
-# CORS + para onde o backend redireciona após o login (sem barra no final)
+# Para onde o backend redireciona após o login (sem barra no final). O CORS é só reserva:
+# com o proxy do Netlify, o navegador nem faz chamadas cross-origin.
 APP_CORS_ALLOWED_ORIGINS=https://ifinance-app.netlify.app
 APP_FRONTEND_BASE_URL=https://ifinance-app.netlify.app
+
+# O Nginx chega no container pelo gateway do Docker (172.x), não por 127.0.0.1.
+# Sem isso o Spring ignora o X-Forwarded-Proto e gera redirecionamentos http://
+TRUSTED_PROXIES='127\.0\.0\.1|::1|172\.(1[6-9]|2[0-9]|3[01])\.\d{1,3}\.\d{1,3}'
 
 BACKEND_IMAGE=ifinance-backend:local
 ```
@@ -172,8 +182,8 @@ sudo certbot --nginx -d 64-181-167-33.sslip.io --redirect \
 curl https://64-181-167-33.sslip.io/actuator/health
 ```
 
-O `X-Forwarded-Proto` é essencial. Sem ele, o Spring acha que está em HTTP e manda
-ao Google um `redirect_uri` com `http://`, que é recusado.
+O `X-Forwarded-Proto` é essencial, junto com o `TRUSTED_PROXIES` do `.env`. Sem ele,
+o Spring acha que está em HTTP e gera redirecionamentos com `http://`.
 
 ### 5. Google OAuth
 
@@ -188,8 +198,9 @@ No [Google Cloud Console](https://console.cloud.google.com):
 3. Crie a credencial em **APIs & Services → Credentials → Create credentials → OAuth client ID**:
    - Tipo: **Web application**.
    - **Authorized JavaScript origins:** `https://ifinance-app.netlify.app`
-   - **Authorized redirect URIs:** `https://64-181-167-33.sslip.io/login/oauth2/code/google`
-     (precisa ser **idêntico** ao `GOOGLE_REDIRECT_URI` do `.env`).
+   - **Authorized redirect URIs:** `https://ifinance-app.netlify.app/login/oauth2/code/google`
+     (precisa ser **idêntico** ao `GOOGLE_REDIRECT_URI` do `.env`, no cliente cujo Client ID está no `.env`).
+   - Clique em **Save**. A mudança pode levar alguns minutos para valer; enquanto isso, o Google responde `redirect_uri_mismatch`.
 4. Copie o **Client ID** e o **Client secret** para o `.env` da VM e recrie o backend:
 
 ```bash
@@ -198,55 +209,36 @@ cd /opt/ifinance && sudo docker compose --profile prod up -d
 
 O fluxo de login:
 
-1. O frontend manda o navegador para `https://<api>/oauth2/authorization/google`.
-2. O Google devolve para `https://<api>/login/oauth2/code/google`.
-3. O backend cria a sessão (cookie `JSESSIONID`) e redireciona para `APP_FRONTEND_BASE_URL/auth/callback`.
+1. O frontend manda o navegador para `/oauth2/authorization/google`. O Netlify repassa ao backend, que grava o cookie `JSESSIONID` no domínio do Netlify.
+2. O Google devolve para `https://ifinance-app.netlify.app/login/oauth2/code/google`, e o Netlify repassa ao backend.
+3. O backend conclui a sessão e redireciona para `APP_FRONTEND_BASE_URL/auth/callback`.
 
-### 6. CORS e cookie de sessão
+### 6. Frontend no Netlify
 
-O frontend e a API ficam em domínios diferentes, então três coisas precisam bater:
+Tudo depende do arquivo `public/_redirects` do repo do frontend: as regras de proxy do backend
+vêm primeiro e o fallback do SPA (`/*  /index.html  200`) vem por último. O `vercel.json` só vale na Vercel.
 
-| Onde | Configuração | Valor |
-|---|---|---|
-| `.env` da VM | `APP_CORS_ALLOWED_ORIGINS` | `https://ifinance-app.netlify.app` (sem `/` no final; para várias origens, separe por vírgula) |
-| `application-prod.yml` | cookie de sessão | `SameSite=None; Secure` (já configurado) |
-| frontend | axios | `withCredentials: true` (já configurado) |
+A variável `VITE_API_BASE_URL` **não deve existir** no Netlify. Sem ela, o frontend usa
+caminhos relativos (`/api/...`) e tudo passa pelo proxy. Se a variável for criada ou removida,
+rode **Deploys → Trigger deploy → Clear cache and deploy site**: o Vite grava o valor no bundle durante o build.
 
-O cookie com `SameSite=None; Secure` **só funciona com HTTPS** (passo 4).
-Mudou o `.env`? Rode `sudo docker compose --profile prod up -d` para valer.
+O service worker do PWA (`vite.config.ts`, `navigateFallbackDenylist`) não intercepta essas rotas.
+Se interceptasse, a volta do Google cairia na página 404 do app.
 
-### 7. Frontend no Netlify
+Se o IP ou o domínio da API mudar, atualize as URLs no `_redirects` e faça um novo deploy.
 
-No Netlify, abra **Site configuration → Environment variables** e crie:
-
-| Variável | Valor |
-|---|---|
-| `VITE_API_BASE_URL` | `https://64-181-167-33.sslip.io` (sem `/` no final) |
-
-O Vite grava essa variável no bundle **durante o build**. Depois de criar ou alterar,
-rode **Deploys → Trigger deploy → Clear cache and deploy site**.
-
-Também é preciso o arquivo `public/_redirects` no repo do frontend com `/*  /index.html  200`.
-Sem ele, o Netlify devolve 404 em `/auth/callback` e o login quebra no retorno.
-O `vercel.json` só vale na Vercel.
-
-### 8. Checklist de verificação
+### 7. Checklist de verificação
 
 ```bash
 curl https://64-181-167-33.sslip.io/actuator/health                    # {"status":"UP"}
 
-# CORS: a resposta deve trazer Access-Control-Allow-Origin e Allow-Credentials: true
-curl -si -X OPTIONS https://64-181-167-33.sslip.io/api/v1/indexes \
-  -H 'Origin: https://ifinance-app.netlify.app' \
-  -H 'Access-Control-Request-Method: GET' | grep -i access-control
-
-# Deve responder 302 com Location apontando para accounts.google.com e redirect_uri em https
-curl -si https://64-181-167-33.sslip.io/oauth2/authorization/google | grep -i location
+# Pelo proxy do Netlify: 302 para accounts.google.com com redirect_uri do Netlify + Set-Cookie JSESSIONID
+curl -si https://ifinance-app.netlify.app/oauth2/authorization/google | grep -iE "location|set-cookie"
 
 curl -s -o /dev/null -w '%{http_code}\n' https://ifinance-app.netlify.app/auth/callback   # 200
 ```
 
-Por fim, abra `https://ifinance-app.netlify.app`, clique em **Entrar com Google** e confirme que voltou logado.
+Por fim, abra `https://ifinance-app.netlify.app` numa aba anônima, clique em **Entrar com Google** e confirme que voltou logado.
 
 ---
 
@@ -286,10 +278,11 @@ gunzip -c ~/ifinance-AAAA-MM-DD.sql.gz | sudo docker compose --profile prod exec
 
 | Sintoma | Causa provável |
 |---|---|
-| `redirect_uri_mismatch` no Google | O URI do Console difere do `GOOGLE_REDIRECT_URI` (http × https, barra no final, hostname). |
-| Login volta para o site, mas o app continua deslogado | Falta HTTPS, ou a origem em `APP_CORS_ALLOWED_ORIGINS` está errada. O Safari e navegadores com bloqueio de cookies de terceiros podem barrar o cookie cross-site. |
-| Erro de CORS no console | A origem não bate exatamente (`https://`, sem barra) ou o backend não foi recriado após editar o `.env`. |
-| 404 em `/auth/callback` | Falta o `public/_redirects` no frontend. |
-| O app chama `localhost:8888` | `VITE_API_BASE_URL` ausente no Netlify, ou o deploy foi feito sem limpar o cache. |
+| `redirect_uri_mismatch` no Google | O URI do Console difere do `GOOGLE_REDIRECT_URI` (http × https, barra no final, hostname), está em outro cliente OAuth ou não foi salvo. Depois de salvar, espere alguns minutos. |
+| Login volta para o site, mas o app continua deslogado | O frontend está chamando a API direto, sem passar pelo proxy: há `VITE_API_BASE_URL` no Netlify. Apague a variável e rode *Clear cache and deploy*. |
+| Página 404 do app ao voltar do Google | Service worker antigo em cache. Recarregue a página (ou use uma aba anônima). Confira o `navigateFallbackDenylist`. |
+| 404 em `/auth/callback` | Falta o fallback `/*  /index.html  200` no `public/_redirects`. |
+| Redirecionamentos com `http://` | Falta o `TRUSTED_PROXIES` no `.env` (passo 3). |
+| Erros de CSP/`eval` no console na tela do Google | Vêm da página do Google e de extensões do navegador. Podem ser ignorados. |
 | `backend-prod` reiniciando ou `unhealthy` | Falta de memória. Confira `free -h` e veja se a swap está ativa. |
 | `password authentication failed` | O `DB_PASSWORD` mudou depois da primeira subida. Volte à senha original, ou altere-a dentro do Postgres. |
