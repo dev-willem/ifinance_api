@@ -12,6 +12,10 @@ spring:
             client-id: test
             client-secret: test
             scope: openid, email, profile
+          github:
+            client-id: test
+            client-secret: test
+            scope: read:user, user:email
         provider:
           google:
             issuer-uri: https://accounts.google.com

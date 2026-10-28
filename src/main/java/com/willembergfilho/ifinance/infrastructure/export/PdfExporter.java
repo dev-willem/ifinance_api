@@ -87,7 +87,7 @@ public class PdfExporter {
         addRow(table, "Taxa de Juros", percent(p.interestRate() != null ? p.interestRate().movePointLeft(2) : null) + " (" + p.rateType().name() + ")", bold, regular);
         addRow(table, "Prazo", p.term() + " " + p.periodicity().name().toLowerCase(), bold, regular);
         if (p.cetEnabled()) addRow(table, "CET habilitado", "Sim", bold, regular);
-        if (p.inflationCorrectionEnabled())
+        if (p.inflationCorrectionEnabled() && p.inflationIndex() != null)
             addRow(table, "Correção Monetária", p.inflationIndex().name(), bold, regular);
 
         return table;

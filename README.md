@@ -128,6 +128,15 @@ GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxx
 # O Google devolve para o Netlify, que repassa ao backend (ver arquitetura)
 GOOGLE_REDIRECT_URI=https://ifinance-app.netlify.app/login/oauth2/code/google
 
+# GitHub OAuth (opcional). Callback no OAuth App do GitHub = exatamente GITHUB_REDIRECT_URI.
+# No Netlify, defina VITE_GITHUB_LOGIN=true só depois disso, para o botão aparecer no login.
+# GITHUB_CLIENT_ID=xxxxxxxx
+# GITHUB_CLIENT_SECRET=xxxxxxxx
+# GITHUB_REDIRECT_URI=https://ifinance-app.netlify.app/login/oauth2/code/github
+
+# E-mails promovidos a ADMIN no login (precisam estar verificados no provedor)
+# APP_ADMIN_EMAILS=voce@exemplo.com
+
 # Para onde o backend redireciona após o login (sem barra no final). O CORS é só reserva:
 # com o proxy do Netlify, o navegador nem faz chamadas cross-origin.
 APP_CORS_ALLOWED_ORIGINS=https://ifinance-app.netlify.app

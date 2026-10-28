@@ -4,6 +4,7 @@ import com.willembergfilho.ifinance.domain.simulation.Simulation;
 import com.willembergfilho.ifinance.domain.simulation.SimulationRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -36,7 +37,7 @@ public class CompareSimulationsUseCase {
 
         // 404 (not 403) for any ID that doesn't exist or isn't owned by the caller —
         // a distinct status would let callers enumerate other users' simulation IDs.
-        if (owned.size() < simulationIds.size()) {
+        if (owned.size() < new HashSet<>(simulationIds).size()) {
             Set<UUID> ownedIds = owned.stream().map(Simulation::getId).collect(Collectors.toSet());
             UUID missingOrForeign = simulationIds.stream()
                     .filter(id -> !ownedIds.contains(id))

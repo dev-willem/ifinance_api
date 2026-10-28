@@ -33,13 +33,17 @@ public class AuthController {
         return new UserDto(
                 user.getId(),
                 user.getEmail(),
-                user.getName()
+                user.getName(),
+                user.getRole(),
+                user.getProvider()
         );
     }
 
     public record UserDto(
             UUID id,
             String email,
-            String name
+            String name,
+            UserEntity.Role role,
+            String provider
     ) {}
 }

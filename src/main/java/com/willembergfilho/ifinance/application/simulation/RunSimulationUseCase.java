@@ -110,7 +110,7 @@ public class RunSimulationUseCase {
 
         for (Installment inst : installments) {
             BigDecimal periodCharges = parameters.charges().stream()
-                    .filter(c -> c.appliesOnPeriod() == null)
+                    .filter(c -> c.appliesOnPeriod() == null || c.appliesOnPeriod() == inst.periodNumber())
                     .map(c -> c.chargeType() == CetCharge.ChargeType.FIXED
                             ? c.amount()
                             : inst.principalBalanceBefore().multiply(c.amount().divide(HUNDRED, MonetaryRounding.MC), MonetaryRounding.MC))

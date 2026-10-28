@@ -52,6 +52,11 @@ public class IrrCalculator {
         BigDecimal low = new BigDecimal("-0.9999");
         BigDecimal high = new BigDecimal("10.0");
 
+        // without a sign change in the bracket there is no root; bisection would just drift to an endpoint
+        if (npvCalculator.calculate(cashFlows, low).signum() == npvCalculator.calculate(cashFlows, high).signum()) {
+            throw new CalculationException("TIR indefinida: o fluxo de caixa não muda de sinal no intervalo pesquisado.");
+        }
+
         for (int iter = 0; iter < MAX_ITERATIONS; iter++) {
             BigDecimal mid = low.add(high, MC).divide(new BigDecimal("2"), MC);
             BigDecimal npv = npvCalculator.calculate(cashFlows, mid);

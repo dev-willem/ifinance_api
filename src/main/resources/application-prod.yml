@@ -29,6 +29,16 @@ spring:
             scope: openid, email, profile
             # Sem fallback para {baseUrl}: em prod o valor é sempre explícito (não deriva do Host da requisição).
             redirect-uri: ${GOOGLE_REDIRECT_URI}
+          # GitHub é opcional: sem as variáveis o app sobe com placeholders e só o login GitHub falha.
+          # O callback precisa ser o domínio do frontend (Netlify), que faz proxy de /login/oauth2/* e
+          # guarda o JSESSIONID da requisição OAuth2; no host do backend o login falha com
+          # authorization_request_not_found. Por isso o default é o frontend e nunca {baseUrl}.
+          # Use o mesmo valor como "Authorization callback URL" no OAuth App do GitHub.
+          github:
+            client-id: ${GITHUB_CLIENT_ID:github-not-configured}
+            client-secret: ${GITHUB_CLIENT_SECRET:github-not-configured}
+            scope: read:user, user:email
+            redirect-uri: ${GITHUB_REDIRECT_URI:${APP_FRONTEND_BASE_URL}/login/oauth2/code/github}
         provider:
           google:
             issuer-uri: https://accounts.google.com

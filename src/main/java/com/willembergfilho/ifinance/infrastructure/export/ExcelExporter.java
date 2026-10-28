@@ -53,7 +53,7 @@ public class ExcelExporter {
                 {"Prazo", (double) p.term()},
                 {"Periodicidade", p.periodicity().name()},
                 {"CET Habilitado", p.cetEnabled() ? "Sim" : "Não"},
-                {"Correção Monetária", p.inflationCorrectionEnabled() ? p.inflationIndex().name() : "Não"}
+                {"Correção Monetária", p.inflationCorrectionEnabled() && p.inflationIndex() != null ? p.inflationIndex().name() : "Não"}
         };
 
         for (Object[] param : params) {

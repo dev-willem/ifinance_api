@@ -1,4 +1,7 @@
 app:
+  security:
+    # E-mails promovidos a ADMIN no login (só quando verificados no provedor), separados por vírgula.
+    admin-emails: ${APP_ADMIN_EMAILS:}
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:7000}
   frontend:
@@ -84,6 +87,24 @@ springdoc:
     - group: analysis
       paths-to-match: /api/v1/analysis/**
       display-name: 'Análise financeira'
+    - group: credit
+      paths-to-match: /api/v1/credit/**
+      display-name: 'Crédito'
+    - group: risk
+      paths-to-match: /api/v1/risk/**
+      display-name: 'Risco'
+    - group: business
+      paths-to-match: /api/v1/business/**
+      display-name: 'Empresarial'
+    - group: tax
+      paths-to-match: /api/v1/tax/**
+      display-name: 'Tributário'
+    - group: labor
+      paths-to-match: /api/v1/labor/**
+      display-name: 'Trabalhista'
+    - group: admin
+      paths-to-match: /api/v1/admin/**
+      display-name: 'Administração'
   info:
     title: 'iFinance API'
     description: 'Plataforma de simulação financeira — SAC, PRICE, CET, VPL, TIR, Renda Fixa, Planejamento'

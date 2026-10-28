@@ -8,6 +8,8 @@ import java.util.UUID;
 @Table(name = "users")
 public class UserEntity {
 
+    public enum Role { USER, ADMIN }
+
     @Id
     @Column(columnDefinition = "uuid")
     private UUID id;
@@ -23,6 +25,10 @@ public class UserEntity {
 
     @Column
     private String provider;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Role role = Role.USER;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -62,6 +68,8 @@ public class UserEntity {
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getProvider() { return provider; }
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

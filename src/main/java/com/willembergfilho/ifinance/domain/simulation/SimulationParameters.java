@@ -17,4 +17,9 @@ public record SimulationParameters(
         boolean inflationCorrectionEnabled,
         EconomicIndex inflationIndex,
         List<CetCharge> charges
-) {}
+) {
+    public SimulationParameters {
+        // The API accepts cetEnabled without a charges list; no charges means CET equals the plain cash flow
+        if (charges == null) charges = List.of();
+    }
+}

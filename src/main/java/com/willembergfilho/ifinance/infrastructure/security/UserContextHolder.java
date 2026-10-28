@@ -38,6 +38,12 @@ public class UserContextHolder {
             return handleUnauthenticated();
         }
 
+        Object userId = oAuth2User.getAttribute(UserSyncService.USER_ID_ATTRIBUTE);
+        if (userId != null) {
+            return UUID.fromString(userId.toString());
+        }
+
+        // Principals not built by our user services (e.g. tests using oauth2Login()) still resolve by "sub".
         String subjectId = oAuth2User.getAttribute("sub");
 
         return userRepository.findBySubjectId(subjectId)
@@ -61,7 +67,8 @@ public class UserContextHolder {
             return handleUnauthenticatedSubject();
         }
 
-        return oAuth2User.getAttribute("sub");
+        String subjectId = oAuth2User.getAttribute(UserSyncService.SUBJECT_ATTRIBUTE);
+        return subjectId != null ? subjectId : oAuth2User.getAttribute("sub");
     }
 
     private UUID handleUnauthenticated() {
